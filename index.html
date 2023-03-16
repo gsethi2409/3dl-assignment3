@@ -1,0 +1,176 @@
+**Assignment 3**
+
+Gunjan Sethi: gunjans@andrew.cmu.edu
+
+<img src="images/one.png" width="200px">
+
+(#) Contents
+
+ - [Q1 Differentiable Volume Rendering](#q1)
+ - [Q2 Optimizing a Basic Implicit Volume](#q2)
+ - [Q3 Optimizing a Neural Radiance Field (NeRF)](#q3)
+
+<a name="q1">
+(#) Differentiable Volume Rendering
+
+Command: 
+
+`python main.py --config-name=box`
+
+(##) Ray Sampling
+
+The goal is to generate world space rays from a given camera. The `get_pixels_from_image` method generates pixel coordinates, ranging from [-1, 1] for each pixel in an image. 
+The `get_rays_from_pixels` method generates rays for each pixel, by mapping from a camera's Normalized Device Coordinate (NDC) Space into world space.
+
+| Grid | Rays |
+| --- | --- |
+| <img src="images/grid.png"> | <img src="images/rays.png"> |
+
+
+(##) Point Sampling
+
+The goal is to implement the forward method in `StratifiedSampler` in `sampler.py` which
+
+1. Generates a set of distances between `near` and `far` and
+2. Uses these distances to sample points offset from ray origins (`RayBundle.origins`) along ray directions (`RayBundle.directions`).
+3. Stores the distances and sample points in `RayBundle.sample_points` and `RayBundle.sample_lengths`
+
+Sampled points from the first camera are shown below.
+
+<img src="images/sample_points.jpg"> 
+
+
+(##) Volume Rendering
+
+The goal is to implement functions in the `VolumeRenderer` class.
+
+| Volume | Depth |
+| --- | --- |
+| <img src="images/part_1.gif"> | <img src="images/depth.png"> |
+
+
+<a name="q2">
+(#) Optimizing a Basic Implicit Volume
+
+Command
+
+`python main.py --config-name=train_box`
+
+Box Center: $(0.25, 0.25, 0.00)$
+
+Box Side lengths: $(2.00, 1.50, 1.50)$
+
+The following table shows some initialized and optimized views of the volume. 
+
+| Camera | Initialized | Optimized |
+| --- | --- | --- |
+| 0 | <img src="images/part_2_before_training_0.png"> | <img src="images/part_2_after_training_0.png"> |
+| 1 | <img src="images/part_2_before_training_1.png"> | <img src="images/part_2_after_training_1.png"> |
+| 2 | <img src="images/part_2_before_training_2.png"> | <img src="images/part_2_after_training_2.png"> |
+| 3 | <img src="images/part_2_before_training_3.png"> | <img src="images/part_2_after_training_3.png"> |
+
+
+The optimized implicit volume is shown below.
+
+<img src="images/part_1.gif">
+
+
+<a name="q3">
+(#) Optimizing a Neural Radiance Field - NeRF
+
+The goal is to implement an implicit volume as an MLP that maps 3D position to volume density and color.
+Next, we use this implicit volume to optimize a scene from a set of RGB images.
+
+Command
+
+`python main.py --config-name=nerf_lego`
+
+Model
+
+```
+self.encoder_layer1 = torch.nn.Sequential(
+    torch.nn.Linear(embedding_dim_xyz, cfg.n_hidden_neurons_xyz),
+    torch.nn.ReLU()
+)
+
+self.encoder_layer2 = torch.nn.Sequential(
+    torch.nn.Linear(cfg.n_hidden_neurons_xyz, cfg.n_hidden_neurons_xyz),
+    torch.nn.ReLU()
+)
+
+self.encoder_layer2 = self.encoder_layer2 * cfg.n_layers_xyz
+
+self.color_head = torch.nn.Sequential(
+    torch.nn.Linear(cfg.n_hidden_neurons_xyz + embedding_dim_dir, cfg.n_hidden_neurons_dir),
+    torch.nn.ReLU(),
+    torch.nn.Linear(cfg.n_hidden_neurons_dir, 3),
+    torch.nn.Sigmoid(),
+)
+
+self.density_head = torch.nn.Sequential(
+    torch.nn.Linear(cfg.n_hidden_neurons_xyz, 1),
+    torch.nn.ReLU()
+)
+```
+
+Configuration
+
+```
+n_harmonic_functions_xyz: 6
+n_harmonic_functions_dir: 2
+n_hidden_neurons_xyz: 256
+n_hidden_neurons_dir: 256
+density_noise_std: 0.0
+n_layers_xyz: 1
+```
+
+The optimized volume is shown below.
+
+
+| Epoch 10 | Epoch 50 | Epoch 250 |
+| --- | --- | --- |
+| <img src="images/part_3_ep10.gif"> | <img src="images/part_3_ep50.gif"> | <img src="images/part_3_ep250.gif"> | 
+
+
+<a name="q4">
+(#) Optimizing a High Resolution Neural Radiance Field - q4.3 
+    
+Same model as above.
+
+Command
+
+`python main.py --config-name=nerf_lego_highres`
+
+Configuration
+
+```
+n_harmonic_functions_xyz: 6
+n_harmonic_functions_dir: 2
+density_noise_std: 0.0
+n_layers_xyz: 1
+append_xyz: [3]
+```
+
+Let 
+`p1 = n_hidden_neurons_xyz` and `p2 = n_hidden_neurons_dir`
+
+| p1 | p2 | Epoch 60 | Epoch 100 | Epoch 250 | 
+| --- | --- | --- | --- | --- |
+| 128 | 64  | <img src="images/part_4_ep60_1.gif"> | <img src="images/part_4_ep100_1.gif"> | <img src="images/part_4_ep250_1.gif"> |
+| 64  | 32  | <img src="images/part_4_ep50_2.gif"> | <img src="images/part_4_ep100_2.gif"> | <img src="images/part_4_ep250_2.gif"> |
+| 256 | 128 | <img src="images/part_4_ep50_3.gif"> | <img src="images/part_4_ep100_3.gif"> | <img src="images/part_4_ep250_3.gif"> |
+| 32  | 32  | <img src="images/part_4_ep50_4.gif"> | <img src="images/part_4_ep100_4.gif"> | <img src="images/part_4_ep250_4.gif"> |
+
+Increasing the number of hidden neurons improves details in the predicted volume. The 256-128 configuration is able to model details like the red lights on the truck
+as compared to the 64-32 or 32-32 model. 
+
+<!--- Markdeep & image comparison library - probably no need to change anything below -->
+<style class="fallback">body{visibility:hidden;white-space:pre;font-family:monospace}</style><script src="./resources/markdeep.min.js"></script><script>window.alreadyProcessedMarkdeep||(document.body.style.visibility="visible")</script>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js"></script>
+<script src="./resources/jquery.event.move.js"></script>
+<script src="./resources/jquery.twentytwenty.js"></script>
+<link href="./resources/offcanvas.css" rel="stylesheet">
+<link href="./resources/twentytwenty.css" rel="stylesheet" type="text/css" />
+<script>
+$(window).load(function(){$(".twentytwenty-container").twentytwenty({default_offset_pct: 0.5});});
+</script>

@@ -117,7 +117,10 @@ def get_random_pixels_from_image(n_pixels, image_size, camera):
     xy_grid = get_pixels_from_image(image_size, camera)
     
     # TODO (2.1): Random subsampling of pixel coordinates
-    pass
+    # pass
+    W, H = image_size[0], image_size[1] 
+    random_pixels = torch.randint(0, W * H, (n_pixels,))
+    xy_grid_sub = xy_grid[random_pixels, :]
 
     # Return
     return xy_grid_sub.reshape(-1, 2)[:n_pixels]
@@ -128,7 +131,7 @@ def get_rays_from_pixels(xy_grid, image_size, camera):
     W, H = image_size[0], image_size[1]
 
     # TODO (1.3): Map pixels to points on the image plane at Z=1
-    pass
+    # pass
     ndc_points = xy_grid
     ndc_points = torch.cat(
         [

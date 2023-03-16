@@ -105,14 +105,12 @@ class VolumeRenderer(torch.nn.Module):
 
             # TODO (1.5): Render (color) features using weights
             # pass
-            feature = self._aggregate(weights, feature.reshape(-1,64,3))
-            # feature = self._aggregate(weights, feature)
-
+            feature = self._aggregate(weights, feature)
+            # feature = self._aggregate(weights, feature.reshape(-1,64,3))
 
             # TODO (1.5): Render depth map
             # pass
             depth = self._aggregate(weights, depth_values)
-            # depth = self._aggregate_depths(weights, depth_values)
 
 
             # Return

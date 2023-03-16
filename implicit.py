@@ -232,7 +232,69 @@ class NeuralRadianceField(torch.nn.Module):
         embedding_dim_xyz = self.harmonic_embedding_xyz.output_dim
         embedding_dim_dir = self.harmonic_embedding_dir.output_dim
 
-        pass
+        self.encoder_layer1 = torch.nn.Sequential(
+            torch.nn.Linear(embedding_dim_xyz, cfg.n_hidden_neurons_xyz),
+            torch.nn.ReLU()
+        )
+
+        self.encoder_layer2 = torch.nn.Sequential(
+            torch.nn.Linear(cfg.n_hidden_neurons_xyz, cfg.n_hidden_neurons_xyz),
+            torch.nn.ReLU()
+        )
+
+        self.encoder_layer2 = self.encoder_layer2 * cfg.n_layers_xyz
+       
+        self.color_head = torch.nn.Sequential(
+            torch.nn.Linear(cfg.n_hidden_neurons_xyz + embedding_dim_dir, cfg.n_hidden_neurons_dir),
+            torch.nn.ReLU(),
+            torch.nn.Linear(cfg.n_hidden_neurons_dir, 3),
+            torch.nn.Sigmoid(),
+        )
+        
+        self.density_head = torch.nn.Sequential(
+            torch.nn.Linear(cfg.n_hidden_neurons_xyz, 1),
+            torch.nn.ReLU()
+        )
+
+    def forward(
+        self, 
+        ray_bundle: RayBundle,
+    ):
+
+        # get points and directions
+        pts = ray_bundle.sample_points
+        rays_directions_normalized = torch.nn.functional.normalize(
+            ray_bundle.directions, dim=-1
+        )
+
+        # add harmonic embedding
+        pts_embeddings = self.harmonic_embedding_xyz(pts)
+        rays_embedding = self.harmonic_embedding_dir(
+            rays_directions_normalized
+        )
+
+        # feature encoding
+        feats = self.encoder_layer1(pts_embeddings)
+        feats = self.encoder_layer2(feats)
+
+        # predicting density
+        densities = self.density_head(feats)
+
+        # predicting color
+        spatial_dims = feats.shape[:-1]
+        
+        rays_embedding_expand = rays_embedding[..., None, :].expand(
+            *spatial_dims, rays_embedding.shape[-1]
+        )
+        
+        color_layer_input = torch.cat(
+            (feats, rays_embedding_expand),
+            dim=-1
+        )
+
+        colors = self.color_head(color_layer_input)
+        
+        return {'density': densities, 'feature': colors}
 
 
 volume_dict = {

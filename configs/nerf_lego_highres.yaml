@@ -3,7 +3,7 @@ seed: 1
 type: train_nerf
 
 training:
-  num_epochs: 250
+  num_epochs: 251
   batch_size: 1024
   lr: 0.0005
 
@@ -12,9 +12,9 @@ training:
 
   checkpoint_path: ./checkpoints
   checkpoint_interval: 50
-  resume: True
+  resume: False
 
-  render_interval: 10
+  render_interval: 50
 
 data:
   image_size: [400, 400]
@@ -37,11 +37,16 @@ implicit_function:
 
   n_harmonic_functions_xyz: 6
   n_harmonic_functions_dir: 2
-  n_hidden_neurons_xyz: 128
-  n_hidden_neurons_dir: 64
+  n_hidden_neurons_xyz: 32
+  n_hidden_neurons_dir: 32
   density_noise_std: 0.0
-  n_layers_xyz: 6
+  n_layers_xyz: 1
   append_xyz: [3]
 
-
-
+  # n_harmonic_functions_xyz: 6
+  # n_harmonic_functions_dir: 2
+  # n_hidden_neurons_xyz: 256
+  # n_hidden_neurons_dir: 256
+  # density_noise_std: 0.0
+  # n_layers_xyz: 5
+  # append_xyz: [3]
