@@ -88,11 +88,20 @@ def sample_images_at_xy(
 def get_pixels_from_image(image_size, camera):
     W, H = image_size[0], image_size[1]
 
+    if torch.cuda.is_available():
+        device = torch.device("cuda:0")
+    else:
+        device = torch.device("cpu")
+
     # TODO (1.3): Generate pixel coordinates from [0, W] in x and [0, H] in y
-    pass
+    # pass
+    x = torch.arange(W).to(device)
+    y = torch.arange(H).to(device)
 
     # TODO (1.3): Convert to the range [-1, 1] in both x and y
-    pass
+    # pass
+    x = -1 + (2*x /(W-1))
+    y = -1 + (2*y /(H-1))
 
     # Create grid of coordinates
     xy_grid = torch.stack(
