@@ -35,6 +35,7 @@ from dataset import (
     trivial_collate,
 )
 
+from render_functions import render_points
 
 # Model class containing:
 #   1) Implicit volume defining the scene
@@ -98,18 +99,26 @@ def render_images(
 
         # TODO (1.3): Visualize xy grid using vis_grid
         if cam_idx == 0 and file_prefix == '':
-            pass
+            # pass
+            xy_grid_img = vis_grid(xy_grid, image_size)
+            plt.imsave(f'images/grid.png',xy_grid_img)
 
         # TODO (1.3): Visualize rays using vis_rays
         if cam_idx == 0 and file_prefix == '':
-            pass
+            # pass
+            rays_img = vis_rays(ray_bundle, image_size)
+            plt.imsave(f'images/rays.png', rays_img)
         
         # TODO (1.4): Implement point sampling along rays in sampler.py
-        pass
+        # pass
+        rays_bundle = model.sampler.forward(ray_bundle)
 
         # TODO (1.4): Visualize sample points as point cloud
         if cam_idx == 0 and file_prefix == '':
-            pass
+            # pass
+            points = rays_bundle.sample_points.reshape(-1,3)
+            points = points.unsqueeze(0)
+            render_points('images/sample_points.jpg', points, image_size=256, color=[0.7, 0.7, 1], device=None)   
 
         # TODO (1.5): Implement rendering in renderer.py
         out = model(ray_bundle)
@@ -124,7 +133,13 @@ def render_images(
 
         # TODO (1.5): Visualize depth
         if cam_idx == 2 and file_prefix == '':
-            pass
+            # pass
+            plt.imsave(
+                f'images/depth.png',
+                out['depth'].view(
+                    image_size[1], image_size[0]
+                ).detach().cpu()
+            )
 
         # Save
         if save:

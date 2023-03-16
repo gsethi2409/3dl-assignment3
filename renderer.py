@@ -22,19 +22,45 @@ class VolumeRenderer(torch.nn.Module):
         rays_density: torch.Tensor,
         eps: float = 1e-10
     ):
-        # TODO (1.5): Compute transmittance using the equation described in the README
-        pass
 
+        if torch.cuda.is_available():
+            device = torch.device("cuda:0")
+        else:
+            device = torch.device("cpu")
+
+        # TODO (1.5): Compute transmittance using the equation described in the README
+        # pass
+        ndirs = rays_density.shape[0]
+        npts = rays_density.shape[1]
+
+        sigmas = [torch.ones((ndirs, 1)).to(device)] # T = 1
+
+        for pt in range(npts - 1):
+            e = torch.exp(-rays_density[:, pt] * deltas[:, pt])
+            sigmas.append(sigmas[-1] * e)
+
+        stacked_sigmas = torch.stack(sigmas, dim=1)
+        
         # TODO (1.5): Compute weight used for rendering from transmittance and density
+        weights = stacked_sigmas * (1 - torch.exp(-rays_density * deltas))
+        
         return weights
-    
+
     def _aggregate(
         self,
         weights: torch.Tensor,
         rays_feature: torch.Tensor
     ):
         # TODO (1.5): Aggregate (weighted sum of) features using weights
-        pass
+        # pass
+
+        try:
+            weighted_features = (weights * rays_feature)
+        except:
+            weighted_features = (weights.squeeze(2) * rays_feature)
+            
+        
+        feature = torch.sum(weighted_features, axis=1)
 
         return feature
 
@@ -78,10 +104,16 @@ class VolumeRenderer(torch.nn.Module):
             ) 
 
             # TODO (1.5): Render (color) features using weights
-            pass
+            # pass
+            feature = self._aggregate(weights, feature.reshape(-1,64,3))
+            # feature = self._aggregate(weights, feature)
+
 
             # TODO (1.5): Render depth map
-            pass
+            # pass
+            depth = self._aggregate(weights, depth_values)
+            # depth = self._aggregate_depths(weights, depth_values)
+
 
             # Return
             cur_out = {
